@@ -109,6 +109,7 @@ void initSizeOfParts() {
     // Name of function Export
     sizeOfParts["nameFunction"] = 4;
     sizeOfParts["ordinal"] = 2;
+    sizeOfParts["addressOfFunction"] = 4;
 }
 
 void initOffsetOfParts() {
@@ -205,6 +206,7 @@ void initOffsetOfParts() {
     // Name of function Export
     offsetOfParts["nameFunction"] = 0;
     offsetOfParts["ordinal"] = 0;
+    offsetOfParts["addressOfFunction"] = 0;
 }
 
 void init(){
@@ -383,32 +385,57 @@ void showImports() {
         }
         int offsetName1 = RVAName1 + diffRVAandOffset;
         int offsetFirstThunk = RVAFirstThunk + diffRVAandOffset;
-        cout << getStringFromFileData(offsetName1) << endl;
+        cout << "\n\n" << getStringFromFileData(offsetName1) <<  "\t";
 
         int RVAOriginalFirstThunk = getValueOfField("originalFirstThunk", offsetImportTable); 
-        // printf("RVAOriginalFirstThunk: %.8X\n", RVAOriginalFirstThunk);
-        // printf("RVAFirstThunk: %.8X\n", RVAFirstThunk);
-        // printf("offsetFirstThunk: %.8X\n", offsetFirstThunk);
-        // Thunk data
-        while (true) {
-            int RVAImportByName = getValueOfField("ThunkData", offsetFirstThunk);
-            int offsetImportByName = RVAImportByName + diffRVAandOffset;
-            // printf("offsetImportByName: %.8X\n", offsetImportByName);
-            if (offsetImportByName > fileData.size()) {
-                // bug when test with dll file.....
-                // @TODO
-                offsetFirstThunk += sizeOfParts["ThunkData"];
-                break;
-            }
-            if (RVAImportByName == 0) {
-                break;
-            }
-            offsetImportByName += offsetOfParts["name1Thunk"];
-            cout << "\t" << getStringFromFileData(offsetImportByName) << endl;
+        int offsetOfOriginalFirstThunk = RVAOriginalFirstThunk + diffRVAandOffset;
+        printf("RVAOriginalFirstThunk: %.8X\t\t", RVAOriginalFirstThunk);
+        // printf("offsetOfOriginalFirstThunk: %.8X\t\t", offsetOfOriginalFirstThunk);
+        printf("RVAFirstThunk: %.8X\t\t", RVAFirstThunk);
+        printf("offsetFirstThunk: %.8X\n", offsetFirstThunk);
 
-            offsetFirstThunk += sizeOfParts["ThunkData"];
+        // Thunk data
+        // case OriginalFirstThunk is null
+        if (RVAOriginalFirstThunk == 0) {
+            while (true) {
+                int RVAImportByName = getValueOfField("ThunkData", offsetFirstThunk);
+                int offsetImportByName = RVAImportByName + diffRVAandOffset;
+
+                if (RVAImportByName == 0) {
+                    break;
+                }
+
+                int offsetHint = offsetImportByName;
+                int hint = getValueOfField("hint", offsetHint);
+                int thunkValue = getValueOfField("ThunkData", offsetFirstThunk);
+                offsetImportByName += offsetOfParts["name1Thunk"];
+                cout << "\t" << getStringFromFileData(offsetImportByName) << "\t";
+                printf("\tHint: %.4X\tThunk RVA: %.8X\tThunk Offset: %.8X\tThunk Data: %.8X\n", hint, RVAFirstThunk, offsetFirstThunk, thunkValue);
+
+                offsetFirstThunk += sizeOfParts["ThunkData"];
+            }
+        } else {
+            while (true) {
+                // Original First Thunk
+                int RVAImgaeThunkData = getValueOfField("ThunkData", offsetOfOriginalFirstThunk);
+                int offsetImageThunkData = RVAImgaeThunkData + diffRVAandOffset;
+
+                if (RVAImgaeThunkData == 0) {
+                    break;
+                }
+
+                int offsetHint = offsetImageThunkData;
+                int hint = getValueOfField("hint", offsetHint);
+                int thunkValue = getValueOfField("ThunkData", offsetFirstThunk);
+                int offsetName = offsetImageThunkData + offsetOfParts["name1Thunk"];
+                cout << "\t" << getStringFromFileData(offsetName) << "\t";
+                printf("\tHint: %.4X\tThunk RVA: %.8X\tThunk Offset: %.8X\tThunk Data: %.8X\n", hint, RVAFirstThunk, offsetFirstThunk, thunkValue);
+
+                RVAFirstThunk += sizeOfParts["ThunkData"];
+                offsetFirstThunk += sizeOfParts["ThunkData"];
+                offsetOfOriginalFirstThunk += sizeOfParts["ThunkData"];
+            }
         }
-            
 
         offsetImportTable += sizeOfParts["IAT"] = 4 * 5;
     }
@@ -432,6 +459,10 @@ void showExports() {
 
     int numberOfFunctions = getValueOfField("numberOfFuntions", offsetExportTable);
     cout << "There are " << numberOfFunctions << " export functions: " << endl;
+
+    int RVAAddressOfFuntions = getValueOfField("addressOfFuntions", offsetExportTable);
+    int offsetAddressOfFuntions = RVAAddressOfFuntions + diffRVAandOffset;
+
     int numberOfNames = getValueOfField("numberOfNames", offsetExportTable);
     cout << "\tThere are " << numberOfNames << " named functions: " << endl;
 
@@ -446,13 +477,18 @@ void showExports() {
         }
         int offsetOfName = RVAOfName + diffRVAandOffset;
         int ordinal = getValueOfField("ordinal", offsetOfNameOrdinals + indexOfNames * sizeOfParts["ordinal"]);
-        printf("\t\tOrdinal: %.4X\tName: ", ordinal); cout << getStringFromFileData(offsetOfName) << endl;
+        int RVAAddressOfFunction = getValueOfField("addressOfFunction", offsetAddressOfFuntions + indexOfNames * sizeOfParts["addressOfFunction"]);
+        int offsetAddressOfFunction = RVAAddressOfFunction + diffRVAandOffset;
+        printf("\t\tOrdinal: %.4X\tRVA: %.8X\tOffset: %.8X\tName: ", ordinal, RVAAddressOfFunction, offsetAddressOfFunction);
+        cout << getStringFromFileData(offsetOfName) << endl;
     }
 
-    cout << "\tThere are " << numberOfFunctions - numberOfNames << " named functions: " << endl;
+    cout << "\n\tThere are " << numberOfFunctions - numberOfNames << " ordinal functions: " << endl;
     for (int indexOfOrdinalFunction = numberOfNames; indexOfOrdinalFunction < numberOfFunctions; indexOfOrdinalFunction++) {
         int ordinal = getValueOfField("ordinal", offsetOfNameOrdinals + indexOfOrdinalFunction * sizeOfParts["ordinal"]);
-        printf("\t\tOrdinal: %.4X\n", ordinal);
+        int RVAAddressOfFunction = getValueOfField("addressOfFunction", offsetAddressOfFuntions + indexOfOrdinalFunction * sizeOfParts["addressOfFunction"]);
+        int offsetAddressOfFunction = RVAAddressOfFunction + diffRVAandOffset;
+        printf("\t\tOrdinal: %.4X\tRVA: %.8X\tOffset: %.8X\n", ordinal, RVAAddressOfFunction, offsetAddressOfFunction);
     }
 }
 
