@@ -493,11 +493,10 @@ void showExports() {
 }
 
 int main(int argc,  char** argv) {
-    filePath = argv[1];
+    // filePath = argv[1];
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC/BASECALC.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
-    
     init();
     ifstream file (filePath.c_str(), ios::in|ios::binary|ios::ate);
     cout << filePath.c_str() << endl;
@@ -513,8 +512,8 @@ int main(int argc,  char** argv) {
         if (isPEFile()) {
             // showInfoOfPEHeader();
             // showInfoOfSection();
-            showImports();
-            showExports();
+            // showImports();
+            // showExports();
             // showHexOfFile();
         } else {
             printf("This a not a PE file\n");
