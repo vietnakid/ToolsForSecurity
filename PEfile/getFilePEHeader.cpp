@@ -2,9 +2,11 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <string>
 
 #include "initializeValue.h"
 #include "getInfoOfFile.h"
+#include "addCodeToFile.h"
 
 using namespace std;
 
@@ -14,7 +16,7 @@ char * rawData;
 map<string, int> sizeOfParts;
 map<string, int> offsetOfParts;
 map<string, int> offsetInDataDicrectory;
-vector<int> fileData;
+vector<int> fileData, outputData;
 
 void constructIntDataFromRawData() {
     for(int i = 0; i < sizeOfFile; i++) {
@@ -37,14 +39,21 @@ bool isPEFile() {
     return true;
 }
 
+void saveFileWithNewData() {
+    ofstream outputFile ("/Users/macbook/Desktop/SharedWithWindows/test.exe", ios::out | ios::binary);
+    for (int i = 0; i < sizeOfFile; i++) {
+        outputFile.put((char) (outputData[i]));
+    }
+}
+
 int main(int argc,  char** argv) {
     // filePath = argv[1];
-    // filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC/BASECALC.EXE";
+    filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC/BASECALC.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
-    filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
+    // filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
     init();
     ifstream file (filePath.c_str(), ios::in|ios::binary|ios::ate);
-    cout << filePath.c_str() << endl;
+    cout << filePath << endl;
     if (file.is_open())
     {
         sizeOfFile = file.tellg();
@@ -57,9 +66,12 @@ int main(int argc,  char** argv) {
         if (isPEFile()) {
             // showInfoOfPEHeader();
             // showInfoOfSection();
-            showImports();
-            showExports();
+            // showImports();
+            // showExports();
             // showHexOfFile();
+
+            addCodeToFile();
+            saveFileWithNewData();
         } else {
             printf("This a not a PE file\n");
         }
