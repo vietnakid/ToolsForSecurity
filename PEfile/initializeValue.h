@@ -1,5 +1,5 @@
-#ifndef INITALIZE_H
-#define INITALIZE_H
+#ifndef INITALIZE_VALUE_H
+#define INITALIZE_VALUE_H
 
 #include<map>
 
