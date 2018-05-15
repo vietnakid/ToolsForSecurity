@@ -201,7 +201,7 @@ void initOffsetOfParts() {
     offsetOfParts["addressOfFunction"] = 0;
 }
 
-void init(){
+void initPEparams(){
     initSizeOfParts();
     initOffsetOfParts();
 }

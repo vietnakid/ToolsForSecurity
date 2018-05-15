@@ -8,6 +8,6 @@ using namespace std;
 
 extern vector<int> fileData, outputData;
 
-void addCodeToFile();
+vector<int> addCodeToFile();
 
 #endif

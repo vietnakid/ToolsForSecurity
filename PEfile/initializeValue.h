@@ -9,6 +9,6 @@ extern map<string, int> sizeOfParts;
 extern map<string, int> offsetOfParts;
 extern map<string, int> offsetInDataDicrectory;
 
-void init();
+void initPEparams();
 
 #endif

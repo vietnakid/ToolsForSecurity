@@ -11,14 +11,15 @@
 using namespace std;
 
 string filePath = "";
-streampos sizeOfFile;
-char * rawData;
 map<string, int> sizeOfParts;
 map<string, int> offsetOfParts;
 map<string, int> offsetInDataDicrectory;
-vector<int> fileData, outputData;
 
-void constructIntDataFromRawData() {
+vector<int> fileData;
+streampos sizeOfFile;
+
+vector<int> constructIntDataFromRawData(char * rawData) {
+    vector<int> fileData(sizeOfFile);
     for(int i = 0; i < sizeOfFile; i++) {
         int hex = rawData[i];
         if (hex < 0) {
@@ -26,6 +27,7 @@ void constructIntDataFromRawData() {
         }
         fileData[i] = hex;
     }
+    return fileData;
 }
 
 bool isPEFile() {
@@ -39,11 +41,12 @@ bool isPEFile() {
     return true;
 }
 
-void saveFileWithNewData() {
-    ofstream outputFile ("/Users/macbook/Desktop/SharedWithWindows/test.exe", ios::out | ios::binary);
+void saveFileWithNewData(vector<int> outputData, char * savePath) {
+    ofstream outputFile (savePath, ios::out | ios::binary);
     for (int i = 0; i < sizeOfFile; i++) {
         outputFile.put((char) (outputData[i]));
     }
+    cout << "\n\nNew file has been saved with filePath: " << savePath << endl;
 }
 
 int main(int argc,  char** argv) {
@@ -51,27 +54,27 @@ int main(int argc,  char** argv) {
     filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC/BASECALC.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
-    init();
+    // filePath = "/Users/macbook/Desktop/SharedWithWindows/PEFile.exe";
+    // filePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";
+    initPEparams();
     ifstream file (filePath.c_str(), ios::in|ios::binary|ios::ate);
     cout << filePath << endl;
     if (file.is_open())
     {
-        sizeOfFile = file.tellg();
-        fileData = vector<int>(sizeOfFile);
-        rawData = new char [sizeOfFile];
+        
+        sizeOfFile = file.tellg(); // get Size of Data
+        char * rawData = new char [sizeOfFile];
         file.seekg (0, ios::beg);
-        file.read (rawData, sizeOfFile);
+        file.read (rawData, sizeOfFile); // get RawData from file
         file.close();
-        constructIntDataFromRawData();
-        if (isPEFile()) {
-            // showInfoOfPEHeader();
-            // showInfoOfSection();
-            // showImports();
-            // showExports();
-            // showHexOfFile();
+        fileData = constructIntDataFromRawData(rawData); // From RawData to Integer data
 
-            addCodeToFile();
-            saveFileWithNewData();
+        if (isPEFile()) {
+            showInfoOfFile();
+
+            vector<int> outputData = addCodeToFile();
+            string savePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";
+            saveFileWithNewData(outputData,(char*) savePath.c_str());
         } else {
             printf("This a not a PE file\n");
         }

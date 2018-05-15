@@ -18,5 +18,6 @@ void showInfoOfPEHeader();
 void showInfoOfSection();
 void showImports();
 void showExports();
+void showInfoOfFile();
 
 #endif

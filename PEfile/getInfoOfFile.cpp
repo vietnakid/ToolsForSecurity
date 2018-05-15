@@ -101,11 +101,9 @@ void showInfoOfSection() {
 void getImportSectionData() {
     int offsetOfPE = getIntValueFromFileData(60, 4); // 0x3C = 60.... 0X3C -> 0X3F
 
-    string valueToGet;
     int numberOfSection = getValueOfField("numberOfSections", offsetOfPE);
     int sizeOfOneSection = sizeOfParts["Section"];
-    valueToGet = "DataDirectories";
-    int offsetOfSection = offsetOfParts[valueToGet] + offsetOfPE + sizeOfParts[valueToGet];
+    int offsetOfSection = offsetOfParts["DataDirectories"] + offsetOfPE + sizeOfParts["DataDirectories"];
     for (int section = 0; section < numberOfSection; section++) {
         int firstOffsetOfSection = getValueOfField("virutalAddress", offsetOfSection);
         int lastOffsetOfSection = firstOffsetOfSection + getValueOfField("virtualSize", offsetOfSection);
@@ -146,6 +144,9 @@ void showImports() {
     offsetInDataDicrectory["RVAImportTable"] = RVAImportTable;
     getImportSectionData();
     int offsetImportTable = offsetInDataDicrectory["offsetImportTable"];
+
+    printf("RVAImportTable: %.8X\t\t", RVAImportTable);
+    printf("offsetImportTable: %.8X\t\t\n\n", offsetImportTable);
 
     int diffRVAandOffset = offsetImportTable - RVAImportTable;
 
@@ -262,4 +263,12 @@ void showExports() {
         int offsetAddressOfFunction = RVAAddressOfFunction + diffRVAandOffset;
         printf("\t\tOrdinal: %.4X\tRVA: %.8X\tOffset: %.8X\n", ordinal, RVAAddressOfFunction, offsetAddressOfFunction);
     }
+}
+
+void showInfoOfFile() {
+    // showInfoOfPEHeader();
+    // showInfoOfSection();
+    showImports();
+    showExports();
+    // showHexOfFile();
 }
