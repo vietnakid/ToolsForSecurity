@@ -7,36 +7,6 @@
 
 using namespace std;
 
-int getIntValueFromFileData(int offset, int size) {
-    int pow16[8];
-    pow16[0] = 1;
-    for(int i = 1; i < 8; i++) {
-        pow16[i] = pow16[i-1] * 16;
-    }
-    int res = 0;
-    for(int i = 0; i < size; i++) {
-        res += fileData[offset + i]*pow16[i*2];
-    }
-    return res;
-}
-
-string getRawValueFromFileData(int offset, int size) {
-    string res = "";
-    for(int i = 0; i < size; i++) {
-        res += fileData[i + offset];
-    }
-    return res;
-}
-
-string getStringFromFileData(int offset) {
-    string res = "";
-    while (fileData[offset] != 0) {
-        res += fileData[offset];
-        offset++;
-    }
-    return res;
-}
-
 void showHexOfFile() {
     cout << "Hex dump :" << endl;
     printf("00000000\t\t");
@@ -79,7 +49,7 @@ void showInfoOfSection() {
         printf("Offset of section: %.8X\n", offsetOfSection);
 
         valueToGet = "name";
-        string nameOfSection = getRawValueFromFileData(offsetOfParts[valueToGet] + offsetOfSection, sizeOfParts[valueToGet]);
+        string nameOfSection = getStringFromFileData(offsetOfParts[valueToGet] + offsetOfSection);
         cout << "Name : " << nameOfSection << '\n';
 
         printf("Characteristics: %.8X\n", getValueOfField("characteristicsOfSectionTable", offsetOfSection));
@@ -145,10 +115,10 @@ void showImports() {
     getImportSectionData();
     int offsetImportTable = offsetInDataDicrectory["offsetImportTable"];
 
+    int diffRVAandOffset = offsetImportTable - RVAImportTable;
+
     printf("RVAImportTable: %.8X\t\t", RVAImportTable);
     printf("offsetImportTable: %.8X\t\t\n\n", offsetImportTable);
-
-    int diffRVAandOffset = offsetImportTable - RVAImportTable;
 
     while (true) {
         int RVAName1 = getValueOfField("name1", offsetImportTable);
@@ -267,8 +237,8 @@ void showExports() {
 
 void showInfoOfFile() {
     // showInfoOfPEHeader();
-    // showInfoOfSection();
-    showImports();
-    showExports();
+    showInfoOfSection();
+    // showImports();
+    // showExports();
     // showHexOfFile();
 }

@@ -7,6 +7,7 @@
 #include "initializeValue.h"
 #include "getInfoOfFile.h"
 #include "addCodeToFile.h"
+#include "getValueFromFile.h"
 
 using namespace std;
 
