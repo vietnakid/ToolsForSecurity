@@ -47,7 +47,7 @@ void saveFileWithNewData(vector<int> outputData, char * savePath) {
     for (int i = 0; i < sizeOfFile; i++) {
         outputFile.put((char) (outputData[i]));
     }
-    cout << "\n\nNew file has been saved with filePath: " << savePath << endl;
+    cout << "\nNew file has been saved with filePath: \n" << savePath << endl;
 }
 
 int main(int argc,  char** argv) {
@@ -71,7 +71,7 @@ int main(int argc,  char** argv) {
         fileData = constructIntDataFromRawData(rawData); // From RawData to Integer data
 
         if (isPEFile()) {
-            showInfoOfFile();
+            // showInfoOfFile();
 
             vector<int> outputData = addCodeToFile();
             string savePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";

@@ -79,6 +79,8 @@ void getImportSectionData() {
         int lastOffsetOfSection = firstOffsetOfSection + getValueOfField("virtualSize", offsetOfSection);
         if (firstOffsetOfSection <= offsetInDataDicrectory["RVAImportTable"] && offsetInDataDicrectory["RVAImportTable"] <= lastOffsetOfSection) {
             offsetInDataDicrectory["offsetImportTable"] = offsetInDataDicrectory["RVAImportTable"] - (firstOffsetOfSection - getValueOfField("pointerToRawData", offsetOfSection));
+            offsetInDataDicrectory["sizeImportTable"] = getValueOfField("sizeOfRawData", offsetOfSection);
+            offsetInDataDicrectory["offsetImportSection"] = offsetOfSection;
         }
         offsetOfSection += sizeOfOneSection;
     }
@@ -237,8 +239,8 @@ void showExports() {
 
 void showInfoOfFile() {
     // showInfoOfPEHeader();
-    showInfoOfSection();
-    // showImports();
+    // showInfoOfSection();
+    showImports();
     // showExports();
     // showHexOfFile();
 }
