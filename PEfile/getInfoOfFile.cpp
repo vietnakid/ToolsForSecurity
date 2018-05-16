@@ -81,6 +81,7 @@ void getImportSectionData() {
             offsetInDataDicrectory["offsetImportTable"] = offsetInDataDicrectory["RVAImportTable"] - (firstOffsetOfSection - getValueOfField("pointerToRawData", offsetOfSection));
             offsetInDataDicrectory["sizeImportTable"] = getValueOfField("sizeOfRawData", offsetOfSection);
             offsetInDataDicrectory["offsetImportSection"] = offsetOfSection;
+            offsetInDataDicrectory["rawAddressImportSection"] = getValueOfField("pointerToRawData", offsetOfSection);
         }
         offsetOfSection += sizeOfOneSection;
     }
@@ -239,7 +240,7 @@ void showExports() {
 
 void showInfoOfFile() {
     // showInfoOfPEHeader();
-    // showInfoOfSection();
+    showInfoOfSection();
     showImports();
     // showExports();
     // showHexOfFile();
