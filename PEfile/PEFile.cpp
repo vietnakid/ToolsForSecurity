@@ -52,8 +52,8 @@ void saveFileWithNewData(vector<int> outputData, char * savePath) {
 
 int main(int argc,  char** argv) {
     // filePath = argv[1];
-    filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC/BASECALC.EXE";
-    // filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
+    // filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC/BASECALC.EXE";
+    filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/PEFile.exe";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";
@@ -71,7 +71,7 @@ int main(int argc,  char** argv) {
         fileData = constructIntDataFromRawData(rawData); // From RawData to Integer data
 
         if (isPEFile()) {
-            // showInfoOfFile();
+            showInfoOfFile();
 
             vector<int> outputData = addCodeToFile();
             string savePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";

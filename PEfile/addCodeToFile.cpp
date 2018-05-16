@@ -16,6 +16,7 @@ vector<int> offsetOfDlls;
 vector<int> offsetOfFirstThunk;
 int diffRVAandOffset;
 vector<vector<int> > RVAOfFunction;
+map<string, vector<int> > assemblySyntax;
 
 bool canAddCode = true;
 
@@ -200,7 +201,7 @@ vector<int> addImportFunctions() {
     // printf("spaceNeed: %.8X\n\n", spaceNeed);
     int startOffset = lastOffsetImportSection - spaceNeed + 1;
     startOffset = (startOffset / 16) * 16;
-    printf("startOffset: %.8X\n", startOffset);
+    // printf("startOffset: %.8X\n", startOffset);
 
     //@ Must keep this order of getting data
     vector<int> dataOfIID = getRawValueFromFileData(firstOffsetImportTable, IIDSpace);
@@ -221,6 +222,9 @@ vector<int> addImportFunctions() {
     for (int i = startOffset; i <= lastOffsetImportSection; i++) {
         outputData[i] = dataOfNewImport[j];
         j++;
+        if (j > dataOfNewImport.size()) {
+            break;
+        }
     }
 
     // Change RVA point to Import In Data Directory
@@ -248,16 +252,113 @@ vector<int> addImportFunctions() {
     return outputData;
 }
 
-vector<int> addCode(vector<int> & rawData) {
-    vector<int> res = rawData;
+int getOffsetOfCodeSection() {
     int offsetOfPE = getIntValueFromFileData(60, 4); // 0x3C = 60.... 0X3C -> 0X3F
     int originalEntryPoint = getValueOfField("addressOfEntryPoint", offsetOfPE);
-    printf("\n\nPointerToEntryPoint: %.8X\n", originalEntryPoint);
+    int numberOfSection = getValueOfField("numberOfSections", offsetOfPE);
+    int sizeOfOneSection = sizeOfParts["Section"];
+    int offsetOfSection = offsetOfParts["DataDirectories"] + offsetOfPE + sizeOfParts["DataDirectories"];
+    for (int section = 0; section < numberOfSection; section++) {
+        int firstOffsetOfSection = getValueOfField("virutalAddress", offsetOfSection);
+        int lastOffsetOfSection = firstOffsetOfSection + getValueOfField("virtualSize", offsetOfSection);
+        if (firstOffsetOfSection <= originalEntryPoint && originalEntryPoint <= lastOffsetOfSection) {
+            return offsetOfSection;
+        }
+        offsetOfSection += sizeOfOneSection;
+    }
+    return 0;
+}
+
+void initAssemblySyntax() {
+    assemblySyntax["CALL"] = vector<int>() = {255, 21}; // FF15
+    assemblySyntax["MOV"] = vector<int>() = {184}; // B8
+    assemblySyntax["JMP EAX"] = vector<int>() = {255, 224}; // FFE0
+    assemblySyntax["PUSH-BYTE"] = vector<int>() = {106}; // 6A
+    assemblySyntax["PUSH-PTR"] = vector<int>() = {104}; // 68
+}
+
+vector<int> getUserCode() {
+    initAssemblySyntax();
+    int offsetOfPE = getIntValueFromFileData(60, 4); // 0x3C = 60.... 0X3C -> 0X3F
     int imageBase = getValueOfField("imageBase", offsetOfPE);
-    int fileAlignment = getValueOfField("fileAlignment", offsetOfPE);
+    vector<int> code, address;
+    vector<int> zero = {0};
+
+    // @ Push variable 4
+    code.insert(code.end(), assemblySyntax["PUSH-BYTE"].begin(), assemblySyntax["PUSH-BYTE"].end());
+    code.insert(code.end(), zero.begin(), zero.end());
+
+    // @ Push variable 3
+    code.insert(code.end(), assemblySyntax["PUSH-BYTE"].begin(), assemblySyntax["PUSH-BYTE"].end());
+    code.insert(code.end(), zero.begin(), zero.end());
+
+    // @ Push variable 2
+    code.insert(code.end(), assemblySyntax["PUSH-BYTE"].begin(), assemblySyntax["PUSH-BYTE"].end());
+    code.insert(code.end(), zero.begin(), zero.end());
+
+    // @ Push variable 1
+    code.insert(code.end(), assemblySyntax["PUSH-BYTE"].begin(), assemblySyntax["PUSH-BYTE"].end());
+    code.insert(code.end(), zero.begin(), zero.end());
+
+    // @ Call function MessageBoxA
+    code.insert(code.end(), assemblySyntax["CALL"].begin(), assemblySyntax["CALL"].end());
+    address = toRVAArray(RVAOfFunction[0][0] + imageBase);
+    code.insert(code.end(), address.begin(), address.end());
+
+    // @ MOV EAX, OriginalEntryPoint
+    code.insert(code.end(), assemblySyntax["MOV"].begin(), assemblySyntax["MOV"].end());
+    int originalEntryPoint = getValueOfField("addressOfEntryPoint", offsetOfPE);
+    address = toRVAArray(originalEntryPoint + imageBase);
+    code.insert(code.end(), address.begin(), address.end());
+
+    // @ JPM EAX
+    code.insert(code.end(), assemblySyntax["JMP EAX"].begin(), assemblySyntax["JMP EAX"].end());
+
+    return code;
+}
+
+vector<int> addCode(vector<int> rawData) {
+    vector<int> outputData = rawData;
+    int offsetOfPE = getIntValueFromFileData(60, 4); // 0x3C = 60.... 0X3C -> 0X3F
+    int imageBase = getValueOfField("imageBase", offsetOfPE);
+    int originalEntryPoint = getValueOfField("addressOfEntryPoint", offsetOfPE);
     
-    printf("Function RVA: %.8X\n", RVAOfFunction[0][0]);
-    return res;
+    int offsetCodeSection = getOffsetOfCodeSection();
+    int virtualAddressCodeSection = getValueOfField("virutalAddress", offsetCodeSection);
+    int rawOffsetCodeSection = getValueOfField("pointerToRawData", offsetCodeSection);
+    int diffRVAandOffsetCodeSetion = rawOffsetCodeSection - virtualAddressCodeSection;
+
+    // Reset VirtualSize of code section
+    int offsetVirtualSize = offsetOfParts["virtualSize"] + offsetCodeSection;
+    int rawSizeDataCodeSection = getValueOfField("sizeOfRawData", offsetCodeSection);
+    vector<int> newVirtualSizeCodeSection = toRVAArray(rawSizeDataCodeSection);
+    for (int i = 0; i < 3; i++) {
+        outputData[offsetVirtualSize + i] = newVirtualSizeCodeSection[i];
+    }
+
+    // Add Code
+    vector<int> userCode = getUserCode();
+    int lastOffsetCodeSection = rawOffsetCodeSection + rawSizeDataCodeSection - 1;
+    int startOffset = lastOffsetCodeSection - userCode.size() + 1;
+    startOffset = (startOffset / 16) * 16;
+
+    int j = 0;
+    for (int i = startOffset; i <= lastOffsetCodeSection; i++) {
+        outputData[i] = userCode[j];
+        if (j > userCode.size()) {
+            break;
+        }
+        j++;
+    }
+
+    // Set new Entry Point
+    int offsetEntryPoint = offsetOfParts["addressOfEntryPoint"] + offsetOfPE;
+    vector<int> newEntryRVA = toRVAArray(startOffset - diffRVAandOffsetCodeSetion);
+    for (int i = 0; i < 3; i++) {
+        outputData[offsetEntryPoint + i] = newEntryRVA[i];
+    }
+
+    return outputData;
 }
 
 vector<int> addCodeToFile() {
