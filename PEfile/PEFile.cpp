@@ -57,8 +57,7 @@ int main(int argc,  char** argv) {
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/c42bdc8fa6c1900c91539c647d8227c1.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
-    // filePath = "/Users/macbook/Desktop/SharedWithWindows/PEFile.exe";
-    // filePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";
+    filePath = "/Users/macbook/Desktop/SharedWithWindows/PEFile.exe";
     initPEparams();
     ifstream file (filePath.c_str(), ios::in|ios::binary|ios::ate);
     cout << filePath << endl;
@@ -76,7 +75,7 @@ int main(int argc,  char** argv) {
             // showInfoOfFile();
 
             vector<int> outputData = addCodeToFile();
-            string savePath = "/Users/macbook/Desktop/SharedWithWindows/test.exe";
+            string savePath = filePath + "2.exe";
             saveFileWithNewData(outputData,(char*) savePath.c_str());
         } else {
             printf("This a not a PE file\n");

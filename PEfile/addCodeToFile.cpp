@@ -207,6 +207,16 @@ vector<int> addImportFunctions() {
     startOffset = (startOffset / 16) * 16;
     // printf("startOffset: %.8X\n", startOffset);
 
+    bool isEnoughSpace = true;
+    for (int i = startOffset; i <= lastOffsetImportSection; i++) {
+        isEnoughSpace = isEnoughSpace && outputData[i] == 0;
+    }
+    if (!isEnoughSpace) {
+        cout << "I can't add import library in to this file........... because not enough space for import dll and functions." << endl;
+        canAddCode = false;
+        return outputData;
+    }
+
     //@ Must keep this order of getting data
     vector<int> dataOfIID = getRawValueFromFileData(firstOffsetImportTable, IIDSpace);
     vector<int> dllAndFunctionData = genDllAndFunctionData(startOffset + spaceForIID + spaceForRVA);
@@ -288,7 +298,9 @@ int getOffsetOfDataSection(vector<int> outputData, int lengthOfData) {
         for (int i = lastOffsetOfSection - lengthOfData; i <= lastOffsetOfSection; i++) {
             isSectionEmpty = (outputData[i] == 0) && isSectionEmpty;
         }
-        if (nameOfSection.find("data") != string::npos && isSectionEmpty) {
+        bool isCodeSection = firstOffsetOfSection <= originalEntryPoint && originalEntryPoint <= lastOffsetOfSection;
+        // if (nameOfSection.find("data") != string::npos && isSectionEmpty) {
+        if (!isCodeSection && isSectionEmpty) {
             return offsetOfSection;
         }
         offsetOfSection += sizeOfOneSection;
@@ -414,6 +426,16 @@ vector<int> addCode(vector<int> rawData) {
     vector<int> userCode = getUserCode();
     int startOffset = lastOffsetCodeSection - userCode.size() + 1;
     startOffset = (startOffset / 16) * 16;
+
+    bool isEnoughSpace = true;
+    for (int i = startOffset; i <= lastOffsetCodeSection; i++) {
+        isEnoughSpace = isEnoughSpace && outputData[i] == 0;
+    }
+    if (!isEnoughSpace) {
+        cout << "I can't add code in to this file........... because not enough space in code section." << endl;
+        canAddCode = false;
+        return outputData;
+    }
 
     int j = 0;
     for (int i = startOffset; i <= lastOffsetCodeSection; i++) {
