@@ -48,8 +48,7 @@ void showInfoOfSection() {
         printf("Data of section %d: \n", section + 1);
         printf("Offset of section: %.8X\n", offsetOfSection);
 
-        valueToGet = "name";
-        string nameOfSection = getStringFromFileData(offsetOfParts[valueToGet] + offsetOfSection);
+        string nameOfSection = getStringFromFileData(offsetOfParts["name"] + offsetOfSection);
         cout << "Name : " << nameOfSection << '\n';
 
         printf("Characteristics: %.8X\n", getValueOfField("characteristicsOfSectionTable", offsetOfSection));

