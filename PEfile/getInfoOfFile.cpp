@@ -238,9 +238,9 @@ void showExports() {
 }
 
 void showInfoOfFile() {
-    // showInfoOfPEHeader();
+    showInfoOfPEHeader();
     showInfoOfSection();
     showImports();
-    // showExports();
+    showExports();
     // showHexOfFile();
 }

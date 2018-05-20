@@ -197,15 +197,16 @@ vector<int> addImportFunctions() {
     int sectionAlignment = getValueOfField("sectionAlignment", offsetOfPE);
     int firstOffsetImportSection = offsetInDataDicrectory["rawAddressImportSection"];
     int lastOffsetImportSection = firstOffsetImportSection + sizeOfImportSection - 1;
-    // printf("firstOffsetImportTable: %.8X\t\t", firstOffsetImportTable);
-    // printf("lastOffsetImportTable: %.8X\t\t\n\n", lastOffsetImportTable);
-    // printf("sizeOfImportSection: %.8X\n\n", sizeOfImportSection);
-    // printf("firstOffsetImportSection: %.8X\n\n", firstOffsetImportSection);
-    // printf("lastOffsetImportSection: %.8X\n\n", lastOffsetImportSection);
-    // printf("spaceNeed: %.8X\n\n", spaceNeed);
     int startOffset = lastOffsetImportSection - spaceNeed + 1;
     startOffset = (startOffset / 16) * 16;
-    // printf("startOffset: %.8X\n", startOffset);
+
+    printf("firstOffsetImportTable: %.8X\t\t", firstOffsetImportTable);
+    printf("lastOffsetImportTable: %.8X\t\t\n\n", lastOffsetImportTable);
+    printf("sizeOfImportSection: %.8X\n\n", sizeOfImportSection);
+    printf("firstOffsetImportSection: %.8X\n\n", firstOffsetImportSection);
+    printf("lastOffsetImportSection: %.8X\n\n", lastOffsetImportSection);
+    printf("spaceNeed: %.8X\n\n", spaceNeed);
+    printf("startOffset: %.8X\n", startOffset);
 
     bool isEnoughSpace = true;
     for (int i = startOffset; i <= lastOffsetImportSection; i++) {
@@ -321,7 +322,7 @@ vector<int> addUserDataToDataSection(vector<int> rawData) {
 
     int offsetDataSection = getOffsetOfDataSection(outputData, lengthOfData);
     if (offsetDataSection == 0) {
-        cout << "Can't Add Data to file \n";
+        cout << "Can't Add Data to file.. because there are no section which contain enough space for user data \n";
         canAddCode = false;
     }
     int virtualAddressDataSection = getValueOfField("virutalAddress", offsetDataSection);
