@@ -51,13 +51,14 @@ void saveFileWithNewData(vector<int> outputData, char * savePath) {
 }
 
 int main(int argc,  char** argv) {
-    filePath = argv[1];
+    // filePath = argv[1];
     
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/BASECALC.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/FAKE.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/c42bdc8fa6c1900c91539c647d8227c1.EXE";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/twain_32.dll";
     // filePath = "/Users/macbook/Desktop/SharedWithWindows/PEFile.exe";
+    filePath = "/Users/macbook/Desktop/CTFScript/RE/Matesctf/findmypassword.exe_63F911DB29EACF6F793079297E100EC1";
     initPEparams();
     ifstream file (filePath.c_str(), ios::in|ios::binary|ios::ate);
     cout << filePath << endl;
@@ -74,9 +75,9 @@ int main(int argc,  char** argv) {
         if (isPEFile()) {
             showInfoOfFile();
 
-            vector<int> outputData = addCodeToFile();
-            string savePath = filePath + "infeced.exe";
-            saveFileWithNewData(outputData,(char*) savePath.c_str());
+            // vector<int> outputData = addCodeToFile();
+            // string savePath = filePath + "infeced.exe";
+            // saveFileWithNewData(outputData,(char*) savePath.c_str());
         } else {
             printf("This a not a PE file\n");
         }
