@@ -3,19 +3,6 @@
 
 option casemap:none 
 
-; Begin ---====== for test purpose only ======---
-include C:\masm32\include\windows.inc 
-include C:\masm32\include\kernel32.inc
-includelib C:\masm32\lib\kernel32.lib
-include C:\masm32\include\masm32.inc 
-includelib C:\masm32\lib\masm32.lib
-include C:\masm32\include\user32.inc
-includelib C:\masm32\lib\user32.lib
-
-include c:\masm32\macros\macros.asm
-
-; End ---====== for test purpose only ======---
-
 .code
 main:
 incode segment
